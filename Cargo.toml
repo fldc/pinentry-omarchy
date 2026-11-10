@@ -1,6 +1,6 @@
 [package]
 name = "pinentry-omarchy"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Omarchy-themed Quickshell pinentry with a Rust Assuan backend"
 publish = false

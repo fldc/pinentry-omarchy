@@ -48,3 +48,22 @@ remained locked. No real account credentials or vault entries were used.
 The dummy fixture validates local vault operations. Server login, registration,
 sync, and 2FA were not exercised. The startup-loader limitation described in
 SECURITY.md remains; passing these checks is not an independent security audit.
+
+## v0.1.1 follow-up
+
+Validated on 2026-11-10 with signal-hook 0.4.6 and package 0.1.1-1.
+The application and Arch package versions were updated together; package revision
+numbering restarted at 1 for the new application version.
+
+- Formatting, Clippy with warnings denied, and all 29 enabled Rust tests passed.
+- The release/native build and offscreen Qt checks passed during packaging,
+  including with the software rendering backend used by CI.
+- Package 0.1.1-1 was installed; `pacman -Qkk pinentry-omarchy` reported zero
+  altered files, and the installed executable reported version 0.1.1.
+- The full desktop suite and isolated rbw integration passed against
+  `/usr/bin/pinentry-omarchy` from the installed 0.1.1-1 package.
+- The GitHub Actions workflow passed `actionlint`. It runs the non-desktop
+  checks in an Arch Linux container on pushes, version tags, and pull requests.
+
+The documented startup and password-length limits remain unchanged. Server-side
+login, registration, sync, and 2FA remain outside the isolated local-vault tests.

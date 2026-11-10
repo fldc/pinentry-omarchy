@@ -1,6 +1,6 @@
 pkgname=pinentry-omarchy
-pkgver=0.1.0
-pkgrel=3
+pkgver=0.1.1
+pkgrel=1
 pkgdesc='Omarchy-themed pinentry with native locked-memory password input'
 arch=('x86_64' 'aarch64')
 license=('MIT')

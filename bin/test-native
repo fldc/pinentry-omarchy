@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+# Exercise the real field without sending any keys to the user's desktop.
+test -f target/release/libpinentry_secure.a
+test -f qml/Omarchy/Pinentry/libpinentrystartup.so
+test_dir=$(mktemp -d)
+trap 'rm -rf -- "$test_dir"' EXIT
+read -r -a qt_cflags <<< "$(pkg-config --cflags Qt6Quick Qt6Qml)"
+read -r -a qt_libs <<< "$(pkg-config --libs Qt6Quick Qt6Qml)"
+qt_libexecs=$(qmake6 -query QT_HOST_LIBEXECS)
+qt_headers=$(qmake6 -query QT_INSTALL_HEADERS)
+qt_version=$(qmake6 -query QT_VERSION)
+"$qt_libexecs/moc" "${qt_cflags[@]}" native/plugin.cpp -o "$test_dir/plugin.moc"
+"${CXX:-c++}" -std=c++17 -O2 -Wall -Wextra -Werror -fPIC -pthread \
+  "${qt_cflags[@]}" -I"$test_dir" -I"$qt_headers/QtGui/$qt_version" tests/native.cpp \
+  target/release/libpinentry_secure.a "${qt_libs[@]}" -ldl -lm \
+  -o "$test_dir/native-test"
+QT_QPA_PLATFORM=offscreen QT_IM_MODULE=none \
+  LD_PRELOAD="$PWD/qml/Omarchy/Pinentry/libpinentrystartup.so" "$test_dir/native-test"

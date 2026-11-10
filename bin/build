@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+cargo build --release --locked
+mkdir -p build-native
+cd build-native
+qmake6 ../native/plugin.pro
+make -j2
+"${CC:-cc}" -std=c11 -O2 -Wall -Wextra -Werror -fPIC -shared \
+  -Wl,-z,relro,-z,now ../native/startup.c \
+  -o ../qml/Omarchy/Pinentry/libpinentrystartup.so
+cd ..
+cp target/release/pinentry-omarchy ./pinentry-omarchy

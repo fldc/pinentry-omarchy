@@ -1,0 +1,2 @@
+module Omarchy.Pinentry
+plugin pinentrynative

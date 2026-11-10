@@ -1,0 +1,9 @@
+QT += quick qml
+CONFIG += plugin c++17
+TEMPLATE = lib
+TARGET = pinentrynative
+SOURCES = plugin.cpp
+DESTDIR = ../qml/Omarchy/Pinentry
+LIBS += $$PWD/../target/release/libpinentry_secure.a -ldl -lpthread -lm
+PRE_TARGETDEPS += $$PWD/../target/release/libpinentry_secure.a
+QMAKE_LFLAGS += -Wl,-z,relro,-z,now

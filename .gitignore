@@ -1,0 +1,9 @@
+/target/
+/pinentry-omarchy
+/build-native/
+/qml/**/*.so
+/pkg/
+/*.pkg.tar.*
+/pkgbuild/pkg/
+/pkgbuild/src/
+/pkgbuild/*.pkg.tar.*

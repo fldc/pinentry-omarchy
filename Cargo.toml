@@ -1,0 +1,22 @@
+[package]
+name = "pinentry-omarchy"
+version = "0.1.0"
+edition = "2024"
+description = "Omarchy-themed Quickshell pinentry with a Rust Assuan backend"
+publish = false
+
+[lib]
+name = "pinentry_secure"
+crate-type = ["rlib", "staticlib"]
+
+[dependencies]
+libc = "0.2"
+serde_json = "1"
+signal-hook = "0.3"
+tempfile = "3"
+zeroize = "1"
+subtle = "2"
+
+[profile.release]
+lto = true
+strip = true

@@ -1,0 +1,33 @@
+pkgname=pinentry-omarchy
+pkgver=0.1.0
+pkgrel=2
+pkgdesc='Omarchy-themed pinentry with native locked-memory password input'
+arch=('x86_64' 'aarch64')
+license=('MIT')
+depends=('quickshell' 'qt6-base' 'qt6-declarative' 'gcc-libs' 'glibc' 'hyprland' 'ttf-jetbrains-mono-nerd')
+makedepends=('cargo' 'pkgconf')
+options=('!lto')
+source=()
+sha256sums=()
+
+build() {
+  cd "$startdir/.."
+  ./bin/build
+}
+
+check() {
+  cd "$startdir/.."
+  cargo test --locked
+  ./bin/test-native
+}
+
+package() {
+  cd "$startdir/.."
+  install -Dm755 pinentry-omarchy "$pkgdir/usr/bin/pinentry-omarchy"
+  install -Dm644 shell.qml "$pkgdir/usr/lib/pinentry-omarchy/shell.qml"
+  install -Dm644 qml/Omarchy/Pinentry/qmldir "$pkgdir/usr/lib/pinentry-omarchy/qml/Omarchy/Pinentry/qmldir"
+  install -Dm755 qml/Omarchy/Pinentry/libpinentrynative.so "$pkgdir/usr/lib/pinentry-omarchy/qml/Omarchy/Pinentry/libpinentrynative.so"
+  install -Dm755 qml/Omarchy/Pinentry/libpinentrystartup.so "$pkgdir/usr/lib/pinentry-omarchy/qml/Omarchy/Pinentry/libpinentrystartup.so"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 SECURITY.md "$pkgdir/usr/share/doc/$pkgname/SECURITY.md"
+}

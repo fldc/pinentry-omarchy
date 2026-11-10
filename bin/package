@@ -1,0 +1,5 @@
+#!/bin/bash
+set -euo pipefail
+# Keep makepkg's disposable src/ directory separate from the Rust source tree.
+cd "$(dirname "$0")/../pkgbuild"
+exec makepkg "$@"

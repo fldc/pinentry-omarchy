@@ -63,6 +63,8 @@ See [SECURITY.md](SECURITY.md) for the upstream GNOME/GCR baseline, exact protec
 
 ## Tests
 
+GitHub Actions runs formatting, Clippy, Rust regressions, release/native builds, and offscreen Qt checks on pushes to master, version tags, and pull requests. CI uses an Arch Linux container with read-only repository permissions. Desktop and rbw tests remain opt-in because they require a Wayland/Hyprland session.
+
 ```sh
 cargo test
 cargo clippy --all-targets -- -D warnings

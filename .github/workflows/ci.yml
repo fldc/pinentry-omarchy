@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Rust and native Qt checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: archlinux:base-devel
+      options: --ulimit memlock=67108864:67108864
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_TERM_COLOR: always
+      QT_QUICK_BACKEND: software
+    steps:
+      - name: Install build dependencies
+        run: pacman -Syu --noconfirm --needed git rust qt6-base qt6-declarative pkgconf
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Check formatting
+        run: cargo fmt --check
+      - name: Lint Rust
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Run Rust regressions
+        run: cargo test --locked
+      - name: Build release and native libraries
+        run: bin/build
+      - name: Test native fields offscreen
+        run: bin/test-native

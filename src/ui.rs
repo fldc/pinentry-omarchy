@@ -1,4 +1,5 @@
 //! Small C ABI for Qt: no function exports the password to QML or C++.
+use crate::assuan;
 use crate::metadata;
 use crate::secure::{Secret, harden, verify_peer};
 use std::ffi::{CString, c_char};
@@ -101,7 +102,13 @@ pub unsafe extern "C" fn pe_insert(
     let accepted = length <= crate::secure::MAX_SECRET && {
         // SAFETY: Qt lends a live UTF-8 buffer for the indicated length.
         let bytes = unsafe { std::slice::from_raw_parts(data, length) };
-        std::str::from_utf8(bytes).is_ok_and(|text| session.fields[field].insert(text))
+        std::str::from_utf8(bytes).is_ok_and(|text| {
+            // rbw 1.15 consumes only the first Assuan data line. Refuse input
+            // that cannot fit that line, rather than returning a valid prefix.
+            assuan::encoded_len(session.fields[field].bytes()) + assuan::encoded_len(bytes)
+                <= assuan::MAX_DATA
+                && session.fields[field].insert(text)
+        })
     };
     session.rejected[field] = !accepted;
     accepted
@@ -224,7 +231,7 @@ mod tests {
     #[test]
     fn multibyte_overflow_blocks_submission_until_explicit_clear() {
         let (mut session, mut peer) = session(false);
-        assert!(insert(&mut session, 0, &"é".repeat(MAX_SECRET / 2)));
+        assert!(insert(&mut session, 0, &"é".repeat(assuan::MAX_DATA / 2)));
         assert!(!insert(&mut session, 0, "x"));
         assert!(unsafe { pe_rejected(&session, 0) });
         assert_eq!(unsafe { pe_submit(&mut session, true) }, -2);
@@ -251,7 +258,7 @@ mod tests {
     fn matching_truncated_prefixes_never_pass_repeat() {
         let (mut session, mut peer) = session(true);
         for field in 0..2 {
-            assert!(insert(&mut session, field, &"x".repeat(MAX_SECRET)));
+            assert!(insert(&mut session, field, &"x".repeat(assuan::MAX_DATA)));
         }
         assert!(!insert(&mut session, 0, "a"));
         assert!(!insert(&mut session, 1, "b"));
@@ -282,5 +289,13 @@ mod tests {
             open().err().unwrap().kind(),
             io::ErrorKind::PermissionDenied
         );
+    }
+
+    #[test]
+    fn percent_escaping_counts_toward_the_single_line_limit() {
+        let (mut session, _peer) = session(false);
+        assert!(insert(&mut session, 0, &"%".repeat(assuan::MAX_DATA / 3)));
+        assert!(!insert(&mut session, 0, "x"));
+        assert_eq!(unsafe { pe_submit(&mut session, true) }, -2);
     }
 }

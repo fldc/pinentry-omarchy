@@ -99,15 +99,15 @@ static void overflowAndReentry(bool repeat) {
   second.setSessionObject(&session);
   require(second.setProperty("field", 1));
   first.forceActiveFocus();
-  // Exactly 4096 UTF-8 bytes, then a suffix which must never be submitted.
-  key(first, Qt::Key_unknown, QString(2048, QChar(0x00e9)));
-  require(first.count() == 2048 && !first.rejected());
+  // Exactly one Assuan data line (996 bytes), then a rejected suffix.
+  key(first, Qt::Key_unknown, QString(498, QChar(0x00e9)));
+  require(first.count() == 498 && !first.rejected());
   key(first, Qt::Key_X, "x");
   require(first.rejected() && session.submit(true) == -2);
   key(first, Qt::Key_Backspace);
   require(first.rejected() && session.submit(true) == -2);
   if (repeat) {
-    key(second, Qt::Key_unknown, QString(2048, QChar(0x00e9)));
+    key(second, Qt::Key_unknown, QString(498, QChar(0x00e9)));
     key(second, Qt::Key_Y, "y");
     require(second.rejected() && session.submit(true) == -2);
   }

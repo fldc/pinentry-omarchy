@@ -225,7 +225,7 @@ ShellRoot {
         Text {
           width: parent.width
           visible: text.length > 0
-          text: root.inputRejected ? qsTr("Password input was rejected. Maximum length: 4096 UTF-8 bytes. Press Ctrl+U in that field and re-enter it.") : root.mismatch ? (root.request.repeaterror || qsTr("Passwords do not match")) : (root.request ? (root.request.error || "") : "")
+          text: root.inputRejected ? qsTr("Password is too long or contains unsupported input. Press Ctrl+U in that field and re-enter it.") : root.mismatch ? (root.request.repeaterror || qsTr("Passwords do not match")) : (root.request ? (root.request.error || "") : "")
           textFormat: Text.PlainText
           color: root.errorColor
           font.family: root.fontFamily

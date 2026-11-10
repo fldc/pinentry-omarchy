@@ -1,3 +1,4 @@
+use pinentry_secure::assuan;
 use pinentry_secure::metadata;
 use pinentry_secure::secure::{MAX_SECRET, Secret, harden, verify_peer};
 mod output;
@@ -121,7 +122,7 @@ fn write_data(output: &mut impl Write, value: &str) -> io::Result<()> {
         };
         // Assuan permits 1000 bytes including the prefix and CRLF. Keep
         // UTF-8 characters and percent escapes intact across data lines.
-        if line_length + encoded.len() + 2 > 1000 {
+        if line_length + encoded.len() + 2 > assuan::MAX_LINE {
             output.write_all(b"\nD ")?;
             line_length = 2;
         }
@@ -454,11 +455,17 @@ fn serve(
                     Ok(response) if response.action == "accept" => {
                         if command == "GETPIN" {
                             if let Some(secret) = response.secret.as_ref() {
-                                write_data(&mut output, secret.text())?;
-                                if state.contains_key("repeat") {
-                                    writeln!(output, "S PIN_REPEATED")?;
+                                // Defense in depth: no accepted password may
+                                // depend on rbw reading multiple data lines.
+                                if assuan::encoded_len(secret.bytes()) > assuan::MAX_DATA {
+                                    writeln!(output, "{FAILURE}")?;
+                                } else {
+                                    write_data(&mut output, secret.text())?;
+                                    if state.contains_key("repeat") {
+                                        writeln!(output, "S PIN_REPEATED")?;
+                                    }
+                                    writeln!(output, "OK")?;
                                 }
-                                writeln!(output, "OK")?;
                             } else {
                                 writeln!(output, "{FAILURE}")?;
                             }
@@ -653,6 +660,25 @@ mod tests {
             }
             assert_eq!(decoded, secret);
         }
+    }
+
+    #[test]
+    fn passwords_requiring_multiple_data_lines_fail_before_delivery() {
+        for secret in [
+            "x".repeat(assuan::MAX_DATA + 1),
+            "%".repeat(assuan::MAX_DATA / 3 + 1),
+        ] {
+            let (output, _) = run("GETPIN\n", Some(&secret));
+            assert!(output.contains(FAILURE));
+            assert!(!output.contains("D "));
+        }
+        let secret = "%".repeat(assuan::MAX_DATA / 3);
+        let (output, _) = run("GETPIN\n", Some(&secret));
+        assert_eq!(
+            output.lines().filter(|line| line.starts_with("D ")).count(),
+            1
+        );
+        assert!(output.ends_with("OK\n"));
     }
 
     #[test]

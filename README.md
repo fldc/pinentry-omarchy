@@ -52,7 +52,7 @@ Restore the default with `rbw config set pinentry pinentry`. This project does n
 ## Security and scope
 
 - Native Rust holds passwords in locked, non-dumpable, wipe-on-fork mappings and erases them on release. Memory-lock failure refuses the prompt rather than silently weakening protection.
-- Input exceeding 4096 UTF-8 bytes or containing invalid data shows an error and blocks submission. Press Ctrl+U in the affected field and re-enter it; rejected suffixes cannot silently become accepted passwords.
+- Passwords must fit one Assuan data line for rbw compatibility: up to 996 UTF-8 bytes, reduced by two bytes for each `%`, CR, or LF that needs escaping. Longer or invalid input shows an error and blocks submission. Press Ctrl+U in the affected field and re-enter it; rejected suffixes cannot silently become accepted passwords.
 - Both processes are non-dumpable, disable core dumps, and use no-new-privileges. The private socket authenticates exact peer PID and UID in both directions. No password passes through QML, JavaScript, JSON, logging, files, environment variables, command arguments, or caching.
 - Input is masked immediately; clipboard, input-method, reveal, accessibility-text, and undo paths are absent. Window activation is required for typing; losing it cancels and erases the input.
 - Supports GETPIN, repeat entry, CONFIRM, MESSAGE, labels, reset, basic GETINFO, and cancellation. Unsupported features fail explicitly. It is rbw-focused, not a full GnuPG frontend.
@@ -87,3 +87,11 @@ To run the same checks against the root-owned installed package:
 ```sh
 PINENTRY_TEST_BINARY=/usr/bin/pinentry-omarchy cargo test --test live -- --ignored --test-threads=1
 ```
+
+Test the installed rbw CLI against an isolated encrypted dummy vault:
+
+```sh
+python3 tests/rbw.py
+```
+
+This also takes desktop focus and types short dummy values. It requires rbw 1.15, wtype, hyprctl, and python-cryptography. It uses temporary configuration/cache/data directories and a unique agent profile, then stops that agent and removes its files. Existing accounts and settings are untouched. It checks cancellation, wrong-password retry, unlock, list/get, lock, and automatic unlock. Server login, registration, sync, and 2FA require separate server-side testing.

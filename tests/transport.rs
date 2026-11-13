@@ -14,11 +14,17 @@ impl Drop for Process {
 }
 
 fn stalled_session() -> Process {
+    // Keep the Omarchy backend selected without requiring a real desktop.
+    let runtime = tempfile::tempdir().unwrap();
+    let _display =
+        std::os::unix::net::UnixListener::bind(runtime.path().join("wayland-test")).unwrap();
     let mut commands = tempfile::tempfile().unwrap();
     commands.write_all(&b"NOP\n".repeat(20000)).unwrap();
     commands.seek(SeekFrom::Start(0)).unwrap();
     let mut child = Process(
         Command::new(env!("CARGO_BIN_EXE_pinentry-omarchy"))
+            .env("XDG_RUNTIME_DIR", runtime.path())
+            .env("WAYLAND_DISPLAY", "wayland-test")
             .stdin(commands)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())

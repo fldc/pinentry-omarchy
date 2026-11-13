@@ -243,13 +243,29 @@ ShellRoot {
 
 #[test]
 fn termination_while_waiting_for_input() {
+    // Exercise the Omarchy signal handler even on headless CI runners. No
+    // dialog is requested, so a listening socket suffices to select the UI.
+    let runtime = tempfile::tempdir().unwrap();
+    let _display =
+        std::os::unix::net::UnixListener::bind(runtime.path().join("wayland-test")).unwrap();
     let child = Command::new(executable())
+        .env("XDG_RUNTIME_DIR", runtime.path())
+        .env("WAYLAND_DISPLAY", "wayland-test")
         .stdin(Stdio::piped())
-        .stdout(Stdio::null())
+        .stdout(Stdio::piped())
         .spawn()
         .unwrap();
     let mut session = Session(child);
-    std::thread::sleep(Duration::from_millis(100));
+    // The greeting confirms the signal handlers are installed before SIGTERM.
+    let mut greeting = [0; b"OK pinentry-omarchy ready\n".len()];
+    session
+        .0
+        .stdout
+        .as_mut()
+        .unwrap()
+        .read_exact(&mut greeting)
+        .unwrap();
+    assert_eq!(&greeting, b"OK pinentry-omarchy ready\n");
     // SAFETY: kill sends SIGTERM to the child created by this test.
     assert_eq!(
         unsafe { libc::kill(session.0.id() as i32, libc::SIGTERM) },

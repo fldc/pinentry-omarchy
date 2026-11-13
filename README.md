@@ -4,7 +4,7 @@
 
 A Quickshell password prompt with a Rust Assuan backend and native locked-memory password field for rbw. QML draws the Omarchy-themed chrome but never receives the accumulated password. A thin C++ Qt plugin binds the native field to Rust; there is no Python dependency. Does not modify or restart Omarchy's shell.
 
-Requires Quickshell, Hyprland, and the JetBrainsMono Nerd Font; Rust/Cargo, make, qmake6, Qt6 Quick headers, and a C++ compiler to build. Run from a Wayland desktop session with `XDG_RUNTIME_DIR` set.
+Requires Quickshell, Hyprland, the system `pinentry` package (for terminal fallback), and the JetBrainsMono Nerd Font; Rust/Cargo, make, qmake6, Qt6 Quick headers, and a C++ compiler to build. Run from a Wayland desktop session with `XDG_RUNTIME_DIR` set.
 
 ## Build
 
@@ -56,7 +56,7 @@ Restore the default with `rbw config set pinentry pinentry`. This project does n
 - Both processes are non-dumpable, disable core dumps, and use no-new-privileges. The private socket authenticates exact peer PID and UID in both directions. No password passes through QML, JavaScript, JSON, logging, files, environment variables, command arguments, or caching.
 - Input is masked immediately; clipboard, input-method, reveal, accessibility-text, and undo paths are absent. Window activation is required for typing; losing it cancels and erases the input.
 - Supports GETPIN, repeat entry, CONFIRM, MESSAGE, labels, reset, basic GETINFO, and cancellation. Unsupported features fail explicitly. It is rbw-focused, not a full GnuPG frontend.
-- The default interaction limit is 120 seconds; rbw's `--timeout 0` correctly means unlimited. UI startup and transport have separate limits. Failures never fall back to another prompt.
+- The default interaction limit is 120 seconds; rbw's `--timeout 0` correctly means unlimited. UI startup and transport have separate limits. Before the Assuan session starts, a missing or unreachable Wayland display selects `/usr/bin/pinentry-curses`, preserving all caller arguments, including rbw's terminal path and timeout. This follows pinentry-gnome3's startup backend selection. Once the graphical backend is selected, cancellation, timeout, and UI/security failures never trigger another prompt. Preview always uses the graphical backend.
 - A native startup guard hardens Quickshell before UI initialization. The earlier dynamic-loader interval still relies on OS ptrace restrictions; see the startup limitations in SECURITY.md. Protocol output uses cancellable writes with a two-second response deadline.
 
 See [SECURITY.md](SECURITY.md) for the upstream GNOME/GCR baseline, exact protections, test coverage, deployment requirements, and remaining trust boundaries. Comparable hardening mechanisms are implemented; independent review is still needed before claiming the same security assurance as mature upstream pinentry.
@@ -68,6 +68,12 @@ GitHub Actions runs formatting, Clippy, Rust regressions, release/native builds,
 ```sh
 cargo test
 cargo clippy --all-targets -- -D warnings
+```
+
+Test terminal fallback with an isolated pseudo-terminal and dummy passwords (requires Python 3 and the system `pinentry` package):
+
+```sh
+python3 tests/fallback.py target/debug/pinentry-omarchy
 ```
 
 After `bin/build`, run the native field checks without taking desktop focus:

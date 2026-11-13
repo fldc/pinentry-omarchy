@@ -1,6 +1,7 @@
 use pinentry_secure::assuan;
 use pinentry_secure::metadata;
 use pinentry_secure::secure::{MAX_SECRET, Secret, harden, verify_peer};
+mod fallback;
 mod output;
 use output::DirectOutput;
 use serde_json::{Map, Value, json};
@@ -502,6 +503,8 @@ fn serve(
 
 fn main() -> io::Result<()> {
     harden()?;
+    // Select before DirectOutput changes stdout flags or the protocol begins.
+    fallback::select()?;
     let stopped = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stopped))?;
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stopped))?;

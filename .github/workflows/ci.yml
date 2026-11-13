@@ -30,7 +30,7 @@ jobs:
       QT_QUICK_BACKEND: software
     steps:
       - name: Install build dependencies
-        run: pacman -Syu --noconfirm --needed git rust qt6-base qt6-declarative pkgconf
+        run: pacman -Syu --noconfirm --needed git rust qt6-base qt6-declarative pkgconf pinentry python
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -41,6 +41,8 @@ jobs:
         run: cargo clippy --locked --all-targets -- -D warnings
       - name: Run Rust regressions
         run: cargo test --locked
+      - name: Test terminal fallback
+        run: python3 tests/fallback.py target/debug/pinentry-omarchy
       - name: Build release and native libraries
         run: bin/build
       - name: Test native fields offscreen

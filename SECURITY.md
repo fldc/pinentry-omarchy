@@ -6,6 +6,12 @@ The baseline on this machine is Arch's `pinentry` 1.3.3-1, whose default wrapper
 
 The goal is comparable concrete protections for rbw password entry on this Wayland/Hyprland desktop, not a claim of identical assurance or complete GnuPG compatibility. Upstream pinentry and GCR have much more deployment history and independent scrutiny. Passing local tests is not a security audit.
 
+## Terminal fallback
+
+Like pinentry-gnome3's startup backend selection, the executable checks display availability before reading commands or writing a greeting. If `WAYLAND_DISPLAY` is absent/empty, a relative display lacks `XDG_RUNTIME_DIR`, or the Wayland socket is missing/refuses connections, it replaces itself with the absolute system executable `/usr/bin/pinentry-curses`. Absolute Wayland socket paths are also supported. All original arguments and protocol file descriptors are preserved, including rbw's `--ttyname` and `--timeout 0`. Preview and informational commands never select curses. Other display-probe errors fail explicitly.
+
+The system pinentry package is a runtime dependency. In terminal mode, upstream curses owns password input, secure memory, terminal echo restoration, protocol output, and cancellation; the graphical password path and its specific memory/transport guarantees below apply only to the Omarchy backend. No proxy buffers, password files, or fallback shell are involved. The existing no-new-privileges and zero-core-limit settings survive exec; dumpability is subject to the same exec boundary described below. A usable terminal is required; invocations without one fail through upstream pinentry. Once the graphical backend is selected, UI startup errors, security-check failures, cancellation, and timeouts never switch to another prompt.
+
 ## Password path
 
 1. The compositor delivers a key event to a native Qt item with keyboard focus. A thin C++ binding passes the event's UTF-8 bytes directly to Rust and erases its transient conversion buffer. The accumulated password is never a QString, QML property, JavaScript string, JSON value, clipboard value, or undo-history entry.
